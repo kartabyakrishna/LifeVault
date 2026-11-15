@@ -1,7 +1,7 @@
 import os
 import sqlite3
-from typing import Tuple, List, Dict
-from ..core.hasher import compute_sha256
+from typing import Tuple, List, Dict, Optional, Callable
+from ..core.hasher import batch_compute_sha256
 
 class DeduplicationEngine:
     """Multi-stage exact bit-for-bit duplicate finder and quarantine manager."""
@@ -9,8 +9,14 @@ class DeduplicationEngine:
     def __init__(self, db_conn: sqlite3.Connection):
         self.conn = db_conn
 
-    def identify_exact_duplicates(self) -> Tuple[int, int, int]:
-        """Group identical files by size and SHA-256 hash. Returns (groups, duplicates, bytes_saved)."""
+    def identify_exact_duplicates(
+        self,
+        progress_callback: Optional[Callable[[str, int, int], None]] = None
+    ) -> Tuple[int, int, int]:
+        """Group identical files by size and SHA-256 hash.
+        
+        Returns (groups, duplicates, bytes_saved).
+        """
         cur = self.conn.cursor()
         
         # 1. Find candidates with same size
@@ -23,16 +29,35 @@ class DeduplicationEngine:
         """)
         size_groups = cur.fetchall()
         
-        # 2. Hash candidates
-        for row in size_groups:
-            sz = row[0]
-            cur.execute("SELECT id, source_path FROM files WHERE source_size = ? AND source_sha256 IS NULL", (sz,))
-            to_hash = cur.fetchall()
-            for fid, fpath in to_hash:
-                if os.path.exists(fpath):
-                    h = compute_sha256(fpath)
-                    cur.execute("UPDATE files SET source_sha256 = ? WHERE id = ?", (h, fid))
-            self.conn.commit()
+        # 2. Gather candidate files that need hashing
+        cur.execute("""
+            SELECT id, source_path 
+            FROM files 
+            WHERE source_size IN (
+                SELECT source_size 
+                FROM files 
+                WHERE source_size > 0 
+                GROUP BY source_size 
+                HAVING count(*) > 1
+            ) AND source_sha256 IS NULL
+        """)
+        to_hash_rows = cur.fetchall()
+        total_to_hash = len(to_hash_rows)
+        
+        if total_to_hash > 0:
+            batch_size = 500
+            for i in range(0, total_to_hash, batch_size):
+                chunk = to_hash_rows[i:i + batch_size]
+                path_to_id = {row[1]: row[0] for row in chunk if os.path.exists(row[1])}
+                hashes = batch_compute_sha256(list(path_to_id.keys()))
+                
+                updates = [(h, path_to_id[p]) for p, h in hashes.items()]
+                if updates:
+                    cur.executemany("UPDATE files SET source_sha256 = ? WHERE id = ?", updates)
+                    self.conn.commit()
+                    
+                if progress_callback:
+                    progress_callback("Hashing collision candidates", min(i + len(chunk), total_to_hash), total_to_hash)
 
         # 3. Mark duplicate groups
         cur.execute("""
@@ -64,7 +89,7 @@ class DeduplicationEngine:
                     WHERE id = ?
                 """, (primary_id, group_id, dupe_id))
                 total_dupes += 1
-                saved_bytes += d[2]
+                saved_bytes += (d[2] or 0)
                 
         self.conn.commit()
         return len(dupe_hashes), total_dupes, saved_bytes
