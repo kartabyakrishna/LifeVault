@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lifevault"
+version = "1.0.0"
+authors = [
+  { name="Kartabya Krishna" }
+]
+description = "Sovereign Personal Memory & Multi-Drive Disaster-Proof Backup Engine for Humans & Digital Twins"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: System :: Archiving :: Backup"
+]
+dependencies = []
+
+[project.scripts]
+lifevault = "lifevault.cli:main"
