@@ -31,25 +31,20 @@ LifeVault enforces a strict physical hardware hierarchy designed around real-wor
 
 ```mermaid
 flowchart TD
-    subgraph Tier1 ["⚡ Tier 1: Fast Ingestion & Cloud Base (Active Workstation)"]
-        Dumps["📱 Phones, DSLRs, Audio Dumps"] -->|Fast USB 3.2 / Thunderbolt| NVMe["⚡ WD_BLACK SN850X 1TB Gen4 NVMe (D:\DCIM)<br/><i>High-Speed 7000 MB/s Staging Buffer</i>"]
-        NVMe -->|High-Speed Cloud Sync| GPhotos["☁️ Google Photos Cloud<br/><i>(Synced ONLY from NVMe, never slow HDDs)</i>"]
+    subgraph Tier1["Tier 1: Fast Ingestion and Cloud Base"]
+        Dumps["Phones, DSLRs, Audio Dumps"] -->|"Fast USB 3.2"| NVMe["WD_BLACK SN850X NVMe - D: DCIM"]
+        NVMe -->|"High-Speed Sync"| GPhotos["Google Photos Cloud"]
     end
 
-    subgraph ColdVaults ["🏛️ Tier 2 & 3: Master Cold Vaults (Permanent Home - Patna)"]
-        NVMe -->|Batch Process & Audit| Engine["⚙️ LifeVault Sovereign Engine"]
-        Engine -->|Master Copy 1 (100% All Data)| Master["🏛️ 4TB Seagate Expansion HDD (F:\)<br/><i>Patna Master Cold Vault (2000–2026)<br/>85,582 Refined | 37,430 Quarantined</i>"]
-        Engine -->|Dedicated Copy 2 (Priceless Data)| Heritage["🏠 1TB Sony HDD (E:\)<br/><i>Patna Childhood & Voice Vault<br/>Pre-2020 Media + CubeCall + Voice Notes</i>"]
+    subgraph ColdVaults["Tier 2 and 3: Master Cold Vaults"]
+        NVMe -->|"Batch Process and Audit"| Engine["LifeVault Sovereign Engine"]
+        Engine -->|"Master Copy 1 - 100% Data"| Master["4TB Seagate Expansion - F:"]
+        Engine -->|"Dedicated Copy 2 - Priceless"| Heritage["1TB Sony HDD - E:"]
     end
 
-    subgraph Mobile ["🎒 Tier 4: Mobile Travel Backup (Bangalore Base)"]
-        NVMe -->|1-Click Incremental Sync| Travel["🎒 1TB Samsung Spinpoint HDD (G:\)<br/><i>Clean GPT NTFS Volume (Travel_Backup)<br/>Desktop 1-Click Sync Shortcut</i>"]
+    subgraph Mobile["Tier 4: Mobile Travel Backup"]
+        NVMe -->|"1-Click Incremental Sync"| Travel["1TB Samsung HDD - G:"]
     end
-
-    style NVMe fill:#ffe0b2,stroke:#f57c00,stroke-width:2px
-    style Master fill:#bbdefb,stroke:#1976d2,stroke-width:2px
-    style Heritage fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
-    style Travel fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
 ```
 
 ### Physical Drive Roster & Invariant Roles:
